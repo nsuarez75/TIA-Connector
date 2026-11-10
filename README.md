@@ -5,3 +5,7 @@ así que el acceso a TIA vive aquí, en un **puente** 4.8 que cada app lanza y c
 **cliente** que vale para .NET 10 y para .NET Framework 4.8.
 
 Estado: especificación. Ver [`docs/especificacion.md`](docs/especificacion.md).
+
+## Licencia
+
+MIT. Ver [LICENSE](LICENSE).
