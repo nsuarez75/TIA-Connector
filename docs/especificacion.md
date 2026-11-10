@@ -140,11 +140,13 @@ Cada paso, en su repo, con issue, rama, `checks.sh` y PR.
 - TIA Portal V20 o posteriores. Se deja preparado: lo dependiente de la versión va en el puente. Antes de V20, comprobar si Openness V20 ya funciona en .NET moderno, porque entonces el puente podría sobrar en esa versión.
 - HMI Unified, configuración de hardware, online (cargar en el PLC, observar), Version Control Interface.
 
-## 10. Preguntas abiertas (entrevista)
+## 10. Entrevista
 
-1. **Distribución:** submódulo de git o paquete NuGet en una carpeta local.
-2. **Abrir el proyecto sin ventana** si no está abierto en ningún TIA (lo hace GST-Diag). ¿Entra en la versión 1 para todas las apps?
-3. **Varias apps a la vez:** cada app arranca su propio puente. ¿Vale, o hace falta un puente compartido?
-4. **Idioma del código:** castellano, como en HerramientasSICAR, o inglés, como en GST-Diag y GST-LoS. Afecta a los nombres de operaciones y modelos.
-5. **Registro:** si el puente deja un archivo de registro para diagnosticar fallos, y dónde.
-6. **Licencia:** el repo es privado; ¿lleva licencia?
+Respuestas del 10/11/2026:
+
+1. **Distribución:** pendiente. Requisito: cada app se reparte como **un solo ejecutable** (el puente va dentro del cliente y se extrae solo, §7).
+2. **Abrir el proyecto sin ventana:** sí, en la versión 1, como opción de `conectar` que cada app usa o no.
+3. **Varias apps a la vez:** cada app arranca su propio puente; no hay puente compartido.
+4. **Idioma del código:** inglés (nombres de operaciones, modelos, clases y miembros). Los nombres de operaciones de §5 y §6 se pasan a inglés al programar el paso 1.
+5. **Registro:** sí. El puente escribe en `%LOCALAPPDATA%\TIA-Connector\logs\`, un archivo por día, y borra los de más de 14 días. Solo operaciones, nombres de bloques y errores; nunca contenido de los proyectos.
+6. **Licencia:** MIT, y el repo pasa a ser público.
