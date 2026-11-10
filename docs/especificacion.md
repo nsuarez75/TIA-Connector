@@ -141,7 +141,7 @@ Cubren lo que usan hoy las tres apps. Un bloque se identifica siempre por **PLC,
 ## 8. Plan
 
 1. **Repo y núcleo** (hecho, issue #4): `Contracts`, `Core` (traído de `Services/` de HerramientasSICAR), `Bridge`, `Client`, tests, `checks.sh` (compilación con avisos como errores + tests, sin TIA) y prueba contra un TIA real con `tools/TiaConnector.Smoke`.
-2. **GST-Diag** pasa al cliente y se borra `GstDiag.Exporter`. Es la prueba más sencilla: solo `openProjects`, `connect` y `exportProgram`.
+2. **GST-Diag** pasa al cliente y se borra `GstDiag.Exporter` (hecho, GST-Diag PR #98). Es la prueba más sencilla: solo `openProjects`, `connect` y `exportProgram`.
 3. **GST-LoS-Generator** pasa al cliente y se borra `GstLosGenerator.Tia`.
 4. **HerramientasSICAR** pasa al cliente y se borra su `Services/`. Después, si se quiere, se migra a .NET 10.
 5. Se retira el repo ImportExportTIA.
