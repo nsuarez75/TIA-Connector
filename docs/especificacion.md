@@ -1,7 +1,6 @@
 # TIA-Connector — Especificación
 
-Redactada el 10/11/2026. Estado: **propuesta**. Antes de programar se cierra con una entrevista; las preguntas
-abiertas están al final.
+Redactada el 10/11/2026. Estado: **cerrada** tras la entrevista del 10/11/2026 (respuestas en §10).
 
 ## 1. Objetivo
 
@@ -118,8 +117,11 @@ Cubren lo que usan hoy las tres apps. Un bloque se identifica siempre por **PLC,
 
 ## 7. Distribución
 
-- `Contratos` y `Cliente` se usan como paquete NuGet desde una carpeta local o como submódulo de git (pregunta
-  abierta). Sin GitHub Packages ni GitHub Actions.
+- Cada app lleva TIA-Connector como **submódulo de git** (por ejemplo en `external/TIA-Connector`) y referencia
+  `Contratos` y `Cliente` como proyectos; al compilar la app se compila también el puente. Para actualizar una app, se
+  trae el commit nuevo de TIA-Connector al submódulo, se hace commit en la app y se compila. Sin GitHub Packages ni
+  GitHub Actions.
+- Cada app se reparte como un solo ejecutable.
 - El cliente lleva `TiaConnector.Puente.exe` como recurso. La primera vez lo extrae a
   `%LOCALAPPDATA%\TIA-Connector\puente\<versión>\` (como GST-Diag). Si la versión del puente no es la que espera, el
   cliente lo vuelve a extraer.
@@ -144,7 +146,7 @@ Cada paso, en su repo, con issue, rama, `checks.sh` y PR.
 
 Respuestas del 10/11/2026:
 
-1. **Distribución:** pendiente. Requisito: cada app se reparte como **un solo ejecutable** (el puente va dentro del cliente y se extrae solo, §7).
+1. **Distribución:** submódulo de git en cada app (el repo es público, así que cualquiera puede clonar y compilar). Cada app se reparte como **un solo ejecutable**: el puente va dentro del cliente y se extrae solo (§7). Cuando TIA-Connector esté estable se puede pasar a paquete NuGet sin tocar el código de las apps.
 2. **Abrir el proyecto sin ventana:** sí, en la versión 1, como opción de `conectar` que cada app usa o no.
 3. **Varias apps a la vez:** cada app arranca su propio puente; no hay puente compartido.
 4. **Idioma del código:** inglés (nombres de operaciones, modelos, clases y miembros). Los nombres de operaciones de §5 y §6 se pasan a inglés al programar el paso 1.
