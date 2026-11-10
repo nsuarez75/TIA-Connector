@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Prueba a mano contra un TIA abierto, desde .NET 10 como lo usarán las apps. No forma parte de los tests -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TiaConnector.Client\TiaConnector.Client.csproj" />
+  </ItemGroup>
+
+</Project>

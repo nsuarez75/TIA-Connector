@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Lo comparten el puente (.NET Framework 4.8) y el cliente (cualquier .NET): sin nada de Openness -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>TiaConnector.Contracts</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Se documenta lo que no es evidente por su nombre; no hace falta un comentario en cada propiedad -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="9.0.2" />
+    <!-- init, records y atributos de nulos en netstandard2.0 -->
+    <PackageReference Include="PolySharp" Version="1.16.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

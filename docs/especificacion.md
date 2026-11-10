@@ -40,97 +40,108 @@ Openness o ruta estándar), engancharse a un TIA del usuario sin cerrarlo nunca,
 ## 4. Arquitectura
 
 ```
-App (.NET 10 o 4.8) ──► TiaConnector.Cliente ──(JSON por líneas, stdin/stdout)──► TiaConnector.Puente.exe (4.8 x64) ──► TiaConnector.Core ──► Openness ──► TIA Portal
+App (.NET 10 o 4.8) ──► TiaConnector.Client ──(JSON por líneas, stdin/stdout)──► TiaConnector.Bridge.exe (4.8 x64) ──► TiaConnector.Core ──► Openness ──► TIA Portal
                                  │                                                           │
-                                 └──────────────────── TiaConnector.Contratos ───────────────┘
+                                 └──────────────────── TiaConnector.Contracts ───────────────┘
 ```
 
 | Proyecto | Marco | Qué es |
 |---|---|---|
-| `TiaConnector.Contratos` | .NET Standard 2.0 | Modelos (proyecto, PLC, HMI, bloque, resultado…) y mensajes del protocolo. Sin Openness. Lo usan el puente y el cliente |
-| `TiaConnector.Core` | .NET Framework 4.8, x64 | Toda la lógica con Openness: lo que hoy está en `Services/` de HerramientasSICAR, más lo que añaden los exportadores de GST-Diag y GST-LoS |
-| `TiaConnector.Puente` | .NET Framework 4.8, x64, exe | Proceso que sigue abierto mientras la app lo necesita. Lee peticiones por la entrada estándar y contesta por la salida estándar. Hilo único de Openness |
-| `TiaConnector.Cliente` | .NET Standard 2.0 | Lo que usan las apps: métodos `async` normales. Lleva el puente dentro, lo extrae, lo arranca, le habla y lo cierra |
-| `TiaConnector.Tests` | .NET 10 + 4.8 | Pruebas sin TIA: contratos y protocolo, cliente contra un puente falso, lógica de XML y de nombres del núcleo |
+| `TiaConnector.Contracts` | .NET Standard 2.0 | Modelos (proyecto, PLC, HMI, bloque, resultado…), mensajes del protocolo y reglas de archivos sin TIA (`FileRules`, `HmiRules`, `TempFolder`). Lo usan el puente, el cliente y las apps |
+| `TiaConnector.Core` | .NET Framework 4.8, x64 | Toda la lógica con Openness (`TiaSession`, `ProjectAccess`, `BlockOperations`, `HmiOperations`): lo que estaba en `Services/` de HerramientasSICAR, más lo que añadían los exportadores de GST-Diag y GST-LoS |
+| `TiaConnector.Bridge` | .NET Framework 4.8, x64, exe | El puente. Lee peticiones por la entrada estándar y contesta por la salida estándar. Hilo único de Openness. Un solo `.exe` (Costura) |
+| `TiaConnector.Client` | .NET Standard 2.0 | Lo que usan las apps (`TiaClient`): métodos `async`. Lleva el puente dentro, lo extrae, lo arranca, le habla y lo cierra |
+| `TiaConnector.Tests` | .NET 10 + 4.8 | Pruebas sin TIA: reglas de archivos, protocolo, cliente contra un puente falso y el puente de verdad extraído (sin engancharse a TIA) |
+| `tools/TiaConnector.Smoke` | .NET 10, exe | Prueba a mano contra un TIA abierto, desde .NET 10 como lo usarán las apps |
 
 Una app .NET Framework 4.8 (HerramientasSICAR) puede usar el cliente igual que una .NET 10. Así su migración a .NET 10
 deja de depender de Openness.
 
 ## 5. Protocolo puente ⇄ cliente
 
-- Una línea JSON por mensaje, UTF-8 sin BOM, sin saltos de línea dentro.
-- **Petición** (cliente → puente): `{"id": 7, "op": "exportar", "args": {...}}`.
-- **Respuestas** (puente → cliente), todas con el `id` de su petición:
-  - `{"id":7,"tipo":"progreso","texto":"Exportando 3/12: Estacion_FB"}` (las que haga falta);
-  - `{"id":7,"tipo":"aviso","texto":"..."}`;
-  - y una sola final: `{"id":7,"tipo":"resultado","datos":{...}}` o `{"id":7,"tipo":"error","texto":"...","codigo":"TiaCerrado"}`.
-- Las peticiones se atienden **de una en una**, en orden (Openness va por un solo hilo). El cliente las encola.
-- Al arrancar, el puente escribe `{"tipo":"listo","version":"1.0.0","tia":"V19"}`. Si no encuentra TIA V19 con Openness,
-  escribe un error y termina.
-- Al cerrarse la entrada estándar, el puente cierra solo los TIA sin ventana que abrió él y termina.
-- Códigos de error comunes: `SinOpenness`, `SinPermiso` (el usuario no aceptó o no está en el grupo), `NoConectado`,
-  `ProyectoNoAbierto`, `TiaCerrado`, `NoExiste`, `Protegido`, `NoCompila`, `RutaLarga`, `Interno`.
+- Una línea JSON por mensaje, UTF-8 sin BOM, sin saltos de línea dentro. Nombres en camelCase y enumerados como texto.
+- **Petición** (cliente → puente): `{"id":7,"op":"exportBlocks","args":{...}}`.
+- **Mensajes** (puente → cliente), todos con el `id` de su petición:
+  - `{"id":7,"kind":"progress","progress":{"stage":"exporting","current":3,"total":12,"item":"Estacion_FB"}}` (los que haga falta);
+  - `{"id":7,"kind":"warning","text":"..."}`;
+  - y uno solo final: `{"id":7,"kind":"result","data":{...}}` o `{"id":7,"kind":"error","code":"tiaClosed","text":"..."}`.
+- Los textos del puente van en inglés y sin traducir: la app se guía por los códigos (`stage`, `code`, `FailureCode`) y
+  compone sus mensajes en su idioma.
+- Las peticiones se atienden **de una en una**, en orden (Openness va por un solo hilo). El cliente puede mandar varias
+  seguidas; cada respuesta vuelve a quien la pidió.
+- Al arrancar, el puente escribe `{"kind":"ready","protocol":1,"bridgeVersion":"0.1.0"}`. Si no encuentra TIA V19 con
+  Openness, escribe `{"kind":"error","code":"noOpenness",...}` y termina.
+- Al cerrarse la entrada estándar, el puente termina lo pendiente, cierra solo el TIA sin ventana que abrió él y sale.
+- Códigos de error (`ErrorCode`): `noOpenness`, `noPermission` (el usuario no aceptó o no está en el grupo),
+  `notConnected`, `projectNotOpen`, `tiaClosed`, `notFound`, `protected`, `doesNotCompile`, `pathTooLong`,
+  `invalidRequest`, `unknownOperation`, `bridgeExited` y `protocolMismatch` (solo del cliente), `internal`.
 
 ## 6. Operaciones de la versión 1
 
 Cubren lo que usan hoy las tres apps. Un bloque se identifica siempre por **PLC, carpetas desde la raíz y nombre**
-(`BloqueRef`), nunca solo por nombre.
+(`BlockRef`), nunca solo por nombre.
 
 ### Sesión y proyecto
 | Operación | Entrada | Salida | Viene de |
 |---|---|---|---|
-| `version` | — | versión del puente y de TIA | nueva |
-| `proyectosAbiertos` | — | por cada TIA con proyecto: PID, ruta del proyecto | todas |
-| `conectar` | ruta del proyecto; `abrirSinVentana` (si no está abierto en ningún TIA) | PLC y HMI (solo nombres), idioma de edición, carpeta del proyecto | HSICAR, GST-Diag |
-| `desconectar` | — | — | nueva |
-| `arbol` | PLC y HMI a leer | carpetas y bloques (nombre, tipo, número, protegido) de cada PLC; ramas y carpetas de cada HMI | HSICAR, GST-LoS |
+| `version` | — | versión del puente, del protocolo y de TIA | nueva |
+| `openProjects` | — | por cada TIA con proyecto: PID y ruta del proyecto | todas |
+| `connect` | ruta del proyecto; `ifNotOpen`: `fail`, `withoutWindow` (TIA sin ventana del puente) o `withWindow` (como un doble clic; ese TIA sigue abierto) | nombre, ruta, carpeta, idioma de edición, PLC y HMI (solo nombres) | HSICAR, GST-Diag, GST-LoS |
+| `disconnect` | — | — | nueva |
+| `readTree` | PLC y HMI a leer | carpetas y bloques (nombre, tipo, número, protegido) de cada PLC; ramas y carpetas de cada HMI | HSICAR, GST-LoS |
+| `readPlc` | PLC | su árbol de bloques | HSICAR |
 
 ### Bloques
 | Operación | Entrada | Salida |
 |---|---|---|
-| `buscarBloques` | PLC; filtro: carpeta (a cualquier profundidad), nombre (patrón), tipo | lista de `BloqueRef` con protegido |
-| `buscarPorNombre` | nombre | `BloqueRef` en todos los PLC |
-| `exportarBloques` | bloques; carpeta; `compilarSiHaceFalta` (sí por defecto); `estructura`: `carpetas` (como en TIA), `plana` (numera si se repite) o `porBloque` | por bloque: ruta del XML o fallo |
-| `importarBloques` | archivos con su PLC y carpeta destino; `crearCarpetas`; `compilarDespues` | por archivo: correcto, fallo o «importado pero no compila» |
-| `compilar` | bloques, un PLC o todo el proyecto | resultado y errores de compilación |
-| `exportarPrograma` | PLC; carpeta | bloques, tablas de variables y tipos en `Bloques`, `Variables` y `Tipos`, sin compilar nada; lo protegido o sin compilar sale como saltado |
-| `importarTipos` | archivos de UDT con su PLC y carpeta | por archivo |
-| `importarVariables` | archivos de tablas de variables con su PLC y carpeta | por archivo |
+| `exportBlocks` | bloques; carpeta; `compileIfNeeded` (sí por defecto); `layout`: `folders` (como en TIA), `flat` (numera si se repite) o `perBlock` | `BatchResult` con la ruta de cada XML |
+| `importBlocks` | archivos con su PLC y carpeta destino (se crean si faltan); `useExistingFolder` por archivo; `compileAfter` | `BatchResult`; «importado pero no compila» sale como fallo `doesNotCompile` |
+| `compile` | bloques, un PLC o todo el proyecto | estado, errores, avisos y mensajes |
+| `exportProgram` | PLC; carpeta | bloques, tablas de variables y tipos en `Bloques`, `Variables` y `Tipos`, sin compilar nada; lo protegido o sin compilar sale como fallo |
+| `importTypes` | archivos de UDT (XML, o fuente `.udt`/`.scl` que se genera y se borra) con su PLC y carpeta | `BatchResult` |
+| `importTagTables` | archivos de tablas de variables con su PLC y carpeta | `BatchResult` |
 
 ### HMI (WinCC clásicas; Unified fuera)
 | Operación | Entrada | Salida |
 |---|---|---|
-| `leerRamasHmi` | HMI y ramas | carpetas y elementos |
-| `exportarHmi` | elementos de HMI; carpeta | por elemento |
-| `importarHmi` | archivos con su HMI, rama y carpetas | por archivo, en el orden de dependencias de `ArchivosHmi` |
+| `readHmiBranches` | HMI y ramas | carpetas y elementos |
+| `exportHmi` | elementos de HMI; carpeta | `BatchResult`; cada elemento en `<carpeta>\[HMI\]<rama>\<carpetas>\` |
+| `importHmi` | HMI y archivos con su rama y carpetas | `BatchResult`, en el orden de dependencias de las ramas (`HmiBranch`); nunca sobrescribe la tabla de variables estándar |
 
 ### En el cliente (sin operación propia en el puente)
-- `ModificarBloquesAsync(bloques, cambio, compilar)`: exporta a una carpeta temporal, aplica a cada XML la función de
-  la app (que puede ser `async`, por ejemplo para traducir), importa encima y borra la carpeta. Es el ciclo que hoy usan
-  el Numerador, Renumerar Array y el Comentador.
-- `ElegirPlc`/`ElegirBloque` **no** van aquí: son diálogos y se quedan en cada app.
+- `BlockSearch.Find` / `InFolder`: buscar bloques en un árbol ya leído (por carpeta a cualquier profundidad, nombre,
+  tipo…). Sustituye a las operaciones `buscarBloques` y `buscarPorNombre` de la propuesta: filtrar en el cliente es más
+  flexible que mandar el filtro al puente.
+- `FindBlocksByNameAsync`: bloques con un nombre en todos los PLC.
+- `ReadBlockXmlAsync`: XML de un bloque sin dejar nada en disco.
+- `ModifyBlocksAsync(bloques, cambio, compilar)`: exporta a una carpeta temporal, aplica a cada XML la función de la app
+  (que puede ser `async`, por ejemplo para traducir), importa encima y borra la carpeta. Es el ciclo que usan el
+  Numerador, Renumerar Array y el Comentador.
+- Elegir PLC o bloque **no** va aquí: son diálogos y se quedan en cada app.
 
 ### Resultados y fallos
-- Toda operación sobre varios objetos devuelve un resultado común: correctos y fallos «nombre: motivo».
-- Si TIA se cierra a mitad, se para y el resultado dice cuántos quedan sin hacer (`TiaCerrado`), como `Intentar` en
-  HerramientasSICAR.
+- Toda operación sobre varios objetos devuelve `BatchResult`: cuántos salieron bien, los fallos (`item`, `code`,
+  `detail` con el texto de TIA) y los archivos escritos.
+- Si TIA se cierra a mitad, se para: `stopped` es true y `remaining` dice cuántos quedan sin hacer.
 
 ## 7. Distribución
 
 - Cada app lleva TIA-Connector como **submódulo de git** (por ejemplo en `external/TIA-Connector`) y referencia
-  `Contratos` y `Cliente` como proyectos; al compilar la app se compila también el puente. Para actualizar una app, se
-  trae el commit nuevo de TIA-Connector al submódulo, se hace commit en la app y se compila. Sin GitHub Packages ni
-  GitHub Actions.
+  `TiaConnector.Client` como proyecto; al compilar la app se compila también el puente (hace falta TIA V19 instalado
+  para compilar, igual que hoy). Para actualizar una app, se trae el commit nuevo de TIA-Connector al submódulo, se
+  hace commit en la app y se compila. Sin GitHub Packages ni GitHub Actions.
 - Cada app se reparte como un solo ejecutable.
-- El cliente lleva `TiaConnector.Puente.exe` como recurso. La primera vez lo extrae a
-  `%LOCALAPPDATA%\TIA-Connector\puente\<versión>\` (como GST-Diag). Si la versión del puente no es la que espera, el
-  cliente lo vuelve a extraer.
-- Versionado semántico. El protocolo lleva versión: un cliente no habla con un puente de versión mayor distinta.
+- El cliente lleva `TiaConnector.Bridge.exe` como recurso. La primera vez lo extrae a
+  `%LOCALAPPDATA%\TIA-Connector\bridge\<versión>-<huella>\`; la huella cambia con cada compilación distinta del puente,
+  así que dos apps con versiones distintas conviven y nunca se usa un puente viejo.
+- Registro del puente: `%LOCALAPPDATA%\TIA-Connector\logs\bridge-AAAAMMDD.log`, 14 días.
+- Versionado semántico (`Directory.Build.props`). El protocolo lleva su propia versión: un cliente no habla con un
+  puente de otro protocolo (`protocolMismatch`).
 
 ## 8. Plan
 
-1. **Repo y núcleo:** `Contratos`, `Core` (traído de `Services/` de HerramientasSICAR, ya ordenado por la PR #28), `Puente`, `Cliente`, tests, `checks.sh` (compilación con avisos como errores + tests, sin TIA).
-2. **GST-Diag** pasa al cliente y se borra `GstDiag.Exporter`. Es la prueba más sencilla: solo `proyectosAbiertos`, `conectar` y `exportarPrograma`.
+1. **Repo y núcleo** (hecho, issue #4): `Contracts`, `Core` (traído de `Services/` de HerramientasSICAR), `Bridge`, `Client`, tests, `checks.sh` (compilación con avisos como errores + tests, sin TIA) y prueba contra un TIA real con `tools/TiaConnector.Smoke`.
+2. **GST-Diag** pasa al cliente y se borra `GstDiag.Exporter`. Es la prueba más sencilla: solo `openProjects`, `connect` y `exportProgram`.
 3. **GST-LoS-Generator** pasa al cliente y se borra `GstLosGenerator.Tia`.
 4. **HerramientasSICAR** pasa al cliente y se borra su `Services/`. Después, si se quiere, se migra a .NET 10.
 5. Se retira el repo ImportExportTIA.
