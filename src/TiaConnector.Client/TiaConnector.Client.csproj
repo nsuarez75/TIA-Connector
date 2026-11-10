@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Lo que usan las apps (.NET 10 o .NET Framework 4.8). Lleva el puente dentro como recurso -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>TiaConnector.Client</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TiaConnector.Contracts\TiaConnector.Contracts.csproj" />
+    <!-- Solo para compilar antes el puente y meter su .exe dentro; no es una referencia de código -->
+    <ProjectReference Include="..\TiaConnector.Bridge\TiaConnector.Bridge.csproj"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="TargetFramework;RuntimeIdentifier;SelfContained" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\TiaConnector.Bridge\bin\$(Configuration)\net48\TiaConnector.Bridge.exe"
+                      LogicalName="TiaConnector.Bridge.exe"
+                      Link="Bridge\TiaConnector.Bridge.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TiaConnector.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PolySharp" Version="1.16.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

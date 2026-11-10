@@ -17,3 +17,6 @@ publish_bin/
 build_log.txt
 build_output.txt
 *.log
+
+## Resultados de pruebas
+TestResults/
