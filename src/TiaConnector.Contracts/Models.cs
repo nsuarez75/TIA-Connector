@@ -23,8 +23,16 @@ public enum DeviceKind
 /// <summary>Un PLC o una HMI del proyecto, sin lo que tiene dentro.</summary>
 public sealed class DeviceInfo
 {
+    /// <summary>Nombre del software (PLC o runtime de HMI): es el que identifica el dispositivo en las operaciones.</summary>
     public string Name { get; set; } = "";
+
     public DeviceKind Kind { get; set; }
+
+    /// <summary>
+    /// Nombre del dispositivo de TIA que lo contiene, el que se ve arriba del todo en el árbol de TIA. En una estación PC
+    /// es el nombre de la estación, mientras que el runtime de dentro suele llamarse HMI_RT_1. Vacío si no se sabe.
+    /// </summary>
+    public string Station { get; set; } = "";
 }
 
 /// <summary>Lo que se sabe del proyecto al conectar.</summary>

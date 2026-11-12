@@ -80,7 +80,7 @@ Cubren lo que usan hoy las tres apps. Un bloque se identifica siempre por **PLC,
 |---|---|---|
 | `version` | — | versión del puente, del protocolo y de TIA |
 | `openProjects` | — | por cada TIA con proyecto: PID y ruta del proyecto |
-| `connect` | ruta del proyecto; `ifNotOpen`: `fail`, `withoutWindow` (TIA sin ventana del puente) o `withWindow` (como un doble clic; ese TIA sigue abierto) | nombre, ruta, carpeta, idioma de edición, PLC y HMI (solo nombres) |
+| `connect` | ruta del proyecto; `ifNotOpen`: `fail`, `withoutWindow` (TIA sin ventana del puente) o `withWindow` (como un doble clic; ese TIA sigue abierto) | nombre, ruta, carpeta, idioma de edición, PLC y HMI (nombre y estación que los contiene, sin lo de dentro) |
 | `disconnect` | — | — |
 | `readTree` | PLC y HMI a leer | carpetas y bloques (nombre, tipo, número, protegido) de cada PLC; ramas y carpetas de cada HMI |
 | `readPlc` | PLC | su árbol de bloques |

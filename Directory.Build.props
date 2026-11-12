@@ -3,7 +3,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <!-- Una sola versión para todo: el cliente solo habla con un puente de su misma versión de protocolo -->
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>Ignacio Suarez</Authors>
     <Product>TIA-Connector</Product>
     <Copyright>Copyright (c) 2026 Ignacio Suarez</Copyright>

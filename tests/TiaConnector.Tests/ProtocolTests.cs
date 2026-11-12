@@ -37,6 +37,18 @@ public sealed class ProtocolTests
     }
 
     [Fact]
+    public void Device_station_travels_with_the_project_and_is_empty_when_an_older_bridge_does_not_send_it()
+    {
+        var info = new ProjectInfo { Devices = { new DeviceInfo { Name = "HMI_RT_1", Kind = DeviceKind.Hmi, Station = "IPC_Linea1" } } };
+
+        var read = Protocol.FromElement<ProjectInfo>(Protocol.ToElement(info));
+        var older = Protocol.FromLine<DeviceInfo>("{\"name\":\"PLC_1\",\"kind\":\"plc\"}");
+
+        Assert.Equal("IPC_Linea1", read.Devices.Single().Station);
+        Assert.Equal("", older.Station);
+    }
+
+    [Fact]
     public void Missing_data_is_an_error_not_an_empty_object() =>
         Assert.ThrowsAny<System.Text.Json.JsonException>(() => Protocol.FromElement<BatchResult>(null));
 
