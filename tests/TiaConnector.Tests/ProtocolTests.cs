@@ -7,7 +7,7 @@ namespace TiaConnector.Tests;
 public sealed class ProtocolTests
 {
     [Fact]
-    public void Request_is_one_line_with_camelCase_names_and_enums_as_text()
+    public void ToLine_Request_OneLineInCamelCase()
     {
         var request = new Request
         {
@@ -23,7 +23,7 @@ public sealed class ProtocolTests
     }
 
     [Fact]
-    public void Response_round_trips_with_its_data()
+    public void FromLine_Response_KeepsData()
     {
         var result = new BatchResult { Succeeded = 2, Failures = { new ItemFailure { Item = "A_FB", Code = FailureCode.Protected } } };
         var response = new Response { Id = 3, Kind = MessageKind.Result, Data = Protocol.ToElement(result) };
@@ -49,11 +49,11 @@ public sealed class ProtocolTests
     }
 
     [Fact]
-    public void Missing_data_is_an_error_not_an_empty_object() =>
+    public void FromElement_NullData_Throws() =>
         Assert.ThrowsAny<System.Text.Json.JsonException>(() => Protocol.FromElement<BatchResult>(null));
 
     [Fact]
-    public void BlockRef_prints_its_whole_path() =>
+    public void ToString_BlockRef_ReturnsWholePath() =>
         Assert.Equal("PLC_1/Carpeta/Sub/Bloque_FB",
             new BlockRef { Plc = "PLC_1", Folders = { "Carpeta", "Sub" }, Name = "Bloque_FB" }.ToString());
 }

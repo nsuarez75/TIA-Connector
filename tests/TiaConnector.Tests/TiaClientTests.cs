@@ -20,7 +20,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public async Task Result_and_progress_reach_the_caller()
+    public async Task ConnectAsync_WithProgress_ReportsProgressAndResult()
     {
         var bridge = new FakeBridge((request, b) =>
         {
@@ -39,7 +39,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public async Task Bridge_error_becomes_an_exception_with_its_code()
+    public async Task ConnectAsync_BridgeError_ThrowsWithCode()
     {
         var bridge = new FakeBridge((request, b) =>
         {
@@ -53,7 +53,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public async Task Requests_are_answered_to_their_own_caller()
+    public async Task ReadPlcAsync_SeveralRequests_EachGetsItsAnswer()
     {
         var bridge = new FakeBridge((request, b) =>
         {
@@ -68,7 +68,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public async Task Different_protocol_is_refused()
+    public async Task Start_OtherProtocol_ThrowsProtocolMismatch()
     {
         var bridge = new FakeBridge((_, _) => true);
         var error = await Assert.ThrowsAsync<TiaConnectorException>(() => Connect(bridge, Protocol.Version + 1));
@@ -76,7 +76,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public async Task Bridge_without_Openness_fails_at_start()
+    public async Task Start_NoOpenness_ThrowsNoOpenness()
     {
         var bridge = new FakeBridge((_, _) => true);
         bridge.Send(new Response { Kind = MessageKind.Error, Code = ErrorCode.NoOpenness, Text = "no TIA" });
@@ -87,7 +87,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public async Task Pending_request_fails_when_the_bridge_stops()
+    public async Task GetOpenProjectsAsync_BridgeStops_ThrowsBridgeExited()
     {
         // El puente se cierra sin contestar.
         var bridge = new FakeBridge((_, _) => false);
@@ -100,7 +100,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public async Task ModifyBlocks_exports_changes_and_imports_into_each_block_folder()
+    public async Task ModifyBlocksAsync_ChangeFailsInOne_ImportsOthersInTheirFolder()
     {
         var imported = new List<ImportFile>();
         var importedXml = new List<string>();
@@ -150,7 +150,7 @@ public sealed class TiaClientTests
     }
 
     [Fact]
-    public void BlockSearch_finds_blocks_with_their_folders()
+    public void InFolder_NestedFolder_ReturnsBlocksWithFolders()
     {
         var tree = new PlcTree
         {
