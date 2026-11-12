@@ -25,10 +25,16 @@ public sealed class ProjectAccess
     /// <summary>Un ejecutor de lotes que para si TIA cierra el proyecto.</summary>
     public BatchRunner NewBatch(BatchResult result) => new(result, IsAlive);
 
-    public IEnumerable<PlcSoftware> Plcs() => Software<PlcSoftware>();
+    public IEnumerable<PlcSoftware> Plcs() => Software<PlcSoftware>().Select(s => s.Software);
 
     /// <summary>HMI WinCC clásicas (paneles y estaciones PC). Las Unified no salen: su software es de otro tipo.</summary>
-    public IEnumerable<HmiTarget> Hmis() => Software<HmiTarget>();
+    public IEnumerable<HmiTarget> Hmis() => Software<HmiTarget>().Select(s => s.Software);
+
+    /// <summary>PLC y HMI con el nombre del dispositivo que los contiene (en un IPC, la estación PC).</summary>
+    public List<DeviceInfo> Devices() =>
+        Software<PlcSoftware>().Select(s => new DeviceInfo { Name = s.Software.Name, Kind = DeviceKind.Plc, Station = s.Station })
+            .Concat(Software<HmiTarget>().Select(s => new DeviceInfo { Name = s.Software.Name, Kind = DeviceKind.Hmi, Station = s.Station }))
+            .ToList();
 
     public PlcSoftware FindPlc(string name) =>
         Plcs().FirstOrDefault(p => p.Name == name)
@@ -59,7 +65,8 @@ public sealed class ProjectAccess
         return group;
     }
 
-    private IEnumerable<T> Software<T>() where T : class
+    // Cada software de ese tipo con el nombre del dispositivo (de primer nivel) en el que está.
+    private IEnumerable<(T Software, string Station)> Software<T>() where T : class
     {
         var devices = new List<Device>(Project.Devices);
         var pending = new Queue<DeviceUserGroup>(Project.DeviceGroups);
@@ -73,7 +80,7 @@ public sealed class ProjectAccess
 
         foreach (var device in devices)
             foreach (var software in FindSoftware<T>(device.DeviceItems))
-                yield return software;
+                yield return (software, device.Name);
     }
 
     private static IEnumerable<T> FindSoftware<T>(DeviceItemComposition items) where T : class

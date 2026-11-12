@@ -37,6 +37,18 @@ public sealed class ProtocolTests
     }
 
     [Fact]
+    public void FromElement_DeviceStation_KeptOrEmpty()
+    {
+        var info = new ProjectInfo { Devices = { new DeviceInfo { Name = "HMI_RT_1", Kind = DeviceKind.Hmi, Station = "IPC_Linea1" } } };
+
+        var read = Protocol.FromElement<ProjectInfo>(Protocol.ToElement(info));
+        var older = Protocol.FromLine<DeviceInfo>("{\"name\":\"PLC_1\",\"kind\":\"plc\"}");
+
+        Assert.Equal("IPC_Linea1", read.Devices.Single().Station);
+        Assert.Equal("", older.Station);
+    }
+
+    [Fact]
     public void FromElement_NullData_Throws() =>
         Assert.ThrowsAny<System.Text.Json.JsonException>(() => Protocol.FromElement<BatchResult>(null));
 
