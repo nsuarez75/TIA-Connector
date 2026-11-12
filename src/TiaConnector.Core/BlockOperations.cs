@@ -133,7 +133,7 @@ public sealed class BlockOperations
 
     /// <summary>
     /// El programa entero de un PLC (bloques, tablas de variables y tipos) en las subcarpetas Bloques, Variables y
-    /// Tipos, como lo lee GST-Diag. No compila nada: lo protegido o sin compilar sale como fallo.
+    /// Tipos. No compila nada: lo protegido o sin compilar sale como fallo.
     /// </summary>
     public BatchResult ExportProgram(ExportProgramArgs args)
     {

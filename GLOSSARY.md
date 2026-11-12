@@ -1,6 +1,6 @@
 # TIA-Connector
 
-Vocabulario del repo. El común a todas las apps está en el `GLOSSARY.md` de GST-Tools. El código va en inglés: entre
+Vocabulario del repo. El código va en inglés: entre
 paréntesis, el nombre en el código.
 
 **Puente** (`TiaConnector.Bridge`):
