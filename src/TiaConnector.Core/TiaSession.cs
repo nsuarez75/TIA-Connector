@@ -72,9 +72,7 @@ public sealed class TiaSession : IDisposable
             ProjectFolder = project.Path.DirectoryName,
             EditingLanguage = project.LanguageSettings.EditingLanguage?.Culture?.Name ?? "",
             OpenedByBridge = openedByBridge,
-            Devices = access.Plcs().Select(p => new DeviceInfo { Name = p.Name, Kind = DeviceKind.Plc })
-                .Concat(access.Hmis().Select(h => new DeviceInfo { Name = h.Name, Kind = DeviceKind.Hmi }))
-                .ToList(),
+            Devices = access.Devices(),
         };
     }
 
