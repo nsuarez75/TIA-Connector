@@ -4,26 +4,20 @@ Redactada el 10/11/2026. Estado: **cerrada** tras la entrevista del 10/11/2026 (
 
 ## 1. Objetivo
 
-Un único sitio para todo lo que nuestras apps hacen con TIA Portal mediante Openness, para:
+Un único sitio para todo lo que las apps hacen con TIA Portal mediante Openness, para:
 
-- no repetir el mismo código en cada app (hoy hay tres versiones, ver §2);
+- no repetir el mismo código en cada app (ver §2);
 - poder escribir las apps en **.NET 10** aunque Openness V19 solo funcione en **.NET Framework 4.8**;
 - que un cambio en el acceso a TIA (un fallo, una versión nueva de TIA) se haga una sola vez.
 
-Norma que hereda de HerramientasSICAR (10/11/2026): todo lo relacionado con TIA está encapsulado y es común a todas
-las herramientas; ninguna app llama a Openness por su cuenta.
+Norma: todo lo relacionado con TIA está encapsulado aquí; ninguna app llama a Openness por su cuenta.
 
-## 2. Lo que hay hoy
+## 2. Punto de partida
 
-| App | Dónde | Forma | Qué hace con TIA |
-|---|---|---|---|
-| HerramientasSICAR (.NET 4.8) | `src/HerramientasSICAR/Services` | En el mismo proceso, un hilo propio (`HiloOpenness`) | Proyectos abiertos, conectar, árbol de PLC y HMI, exportar e importar bloques y elementos de HMI, compilar, ciclo exportar → cambiar XML → importar (`ProyectoTia.Bloques.cs`), programa entero para Sincro Checker, idioma de edición |
-| GST-Diag (.NET 10) | `src/GstDiag.Exporter` | Exe 4.8 que se lanza para cada orden y contesta por la salida estándar («CLAVE texto») | `projects` (TIA abiertos y sus PLC), `export` del programa entero de un PLC; si el proyecto no está abierto, lo abre en un TIA sin ventana y lo cierra al acabar |
-| GST-LoS-Generator (.NET 10) | `src/GstLosGenerator.Tia` | Exe 4.8 que sigue abierto mientras la app lo necesita; órdenes por la entrada estándar, campos separados por tabuladores | `projects`, `tree` (PLC, carpetas y bloques), `export` de un bloque, `import` de UDT + FB, compilar y volver a exportar el FB |
-| ImportExportTIA | repo propio | — | Ya integrado en HerramientasSICAR; se retira |
-
-Las tres coinciden en lo básico: cargar `Siemens.Engineering.dll` de la instalación de TIA V19 (registro de
-Openness o ruta estándar), engancharse a un TIA del usuario sin cerrarlo nunca, y exportar o importar XML.
+Sin una librería común, cada app lleva su propio acceso a Openness: en su mismo proceso, en un hilo propio, o con un
+exe 4.8 aparte con sus propias órdenes y respuestas. Todos coinciden en lo básico: cargar `Siemens.Engineering.dll` de
+la instalación de TIA V19 (registro de Openness o ruta estándar), engancharse a un TIA del usuario sin cerrarlo nunca,
+y exportar o importar XML.
 
 ## 3. Restricciones de TIA Openness
 
@@ -48,14 +42,14 @@ App (.NET 10 o 4.8) ──► TiaConnector.Client ──(JSON por líneas, stdin
 | Proyecto | Marco | Qué es |
 |---|---|---|
 | `TiaConnector.Contracts` | .NET Standard 2.0 | Modelos (proyecto, PLC, HMI, bloque, resultado…), mensajes del protocolo y reglas de archivos sin TIA (`FileRules`, `HmiRules`, `TempFolder`). Lo usan el puente, el cliente y las apps |
-| `TiaConnector.Core` | .NET Framework 4.8, x64 | Toda la lógica con Openness (`TiaSession`, `ProjectAccess`, `BlockOperations`, `HmiOperations`): lo que estaba en `Services/` de HerramientasSICAR, más lo que añadían los exportadores de GST-Diag y GST-LoS |
+| `TiaConnector.Core` | .NET Framework 4.8, x64 | Toda la lógica con Openness (`TiaSession`, `ProjectAccess`, `BlockOperations`, `HmiOperations`) |
 | `TiaConnector.Bridge` | .NET Framework 4.8, x64, exe | El puente. Lee peticiones por la entrada estándar y contesta por la salida estándar. Hilo único de Openness. Un solo `.exe` (Costura) |
 | `TiaConnector.Client` | .NET Standard 2.0 | Lo que usan las apps (`TiaClient`): métodos `async`. Lleva el puente dentro, lo extrae, lo arranca, le habla y lo cierra |
 | `TiaConnector.Tests` | .NET 10 + 4.8 | Pruebas sin TIA: reglas de archivos, protocolo, cliente contra un puente falso y el puente de verdad extraído (sin engancharse a TIA) |
 | `tools/TiaConnector.Smoke` | .NET 10, exe | Prueba a mano contra un TIA abierto, desde .NET 10 como lo usarán las apps |
 
-Una app .NET Framework 4.8 (HerramientasSICAR) puede usar el cliente igual que una .NET 10. Así su migración a .NET 10
-deja de depender de Openness.
+Una app .NET Framework 4.8 puede usar el cliente igual que una .NET 10, así que pasar una app a .NET 10 deja de depender
+de Openness.
 
 ## 5. Protocolo puente ⇄ cliente
 
@@ -82,14 +76,14 @@ Cubren lo que usan hoy las tres apps. Un bloque se identifica siempre por **PLC,
 (`BlockRef`), nunca solo por nombre.
 
 ### Sesión y proyecto
-| Operación | Entrada | Salida | Viene de |
-|---|---|---|---|
-| `version` | — | versión del puente, del protocolo y de TIA | nueva |
-| `openProjects` | — | por cada TIA con proyecto: PID y ruta del proyecto | todas |
-| `connect` | ruta del proyecto; `ifNotOpen`: `fail`, `withoutWindow` (TIA sin ventana del puente) o `withWindow` (como un doble clic; ese TIA sigue abierto) | nombre, ruta, carpeta, idioma de edición, PLC y HMI (solo nombres) | HSICAR, GST-Diag, GST-LoS |
-| `disconnect` | — | — | nueva |
-| `readTree` | PLC y HMI a leer | carpetas y bloques (nombre, tipo, número, protegido) de cada PLC; ramas y carpetas de cada HMI | HSICAR, GST-LoS |
-| `readPlc` | PLC | su árbol de bloques | HSICAR |
+| Operación | Entrada | Salida |
+|---|---|---|
+| `version` | — | versión del puente, del protocolo y de TIA |
+| `openProjects` | — | por cada TIA con proyecto: PID y ruta del proyecto |
+| `connect` | ruta del proyecto; `ifNotOpen`: `fail`, `withoutWindow` (TIA sin ventana del puente) o `withWindow` (como un doble clic; ese TIA sigue abierto) | nombre, ruta, carpeta, idioma de edición, PLC y HMI (solo nombres) |
+| `disconnect` | — | — |
+| `readTree` | PLC y HMI a leer | carpetas y bloques (nombre, tipo, número, protegido) de cada PLC; ramas y carpetas de cada HMI |
+| `readPlc` | PLC | su árbol de bloques |
 
 ### Bloques
 | Operación | Entrada | Salida |
@@ -115,8 +109,7 @@ Cubren lo que usan hoy las tres apps. Un bloque se identifica siempre por **PLC,
 - `FindBlocksByNameAsync`: bloques con un nombre en todos los PLC.
 - `ReadBlockXmlAsync`: XML de un bloque sin dejar nada en disco.
 - `ModifyBlocksAsync(bloques, cambio, compilar)`: exporta a una carpeta temporal, aplica a cada XML la función de la app
-  (que puede ser `async`, por ejemplo para traducir), importa encima y borra la carpeta. Es el ciclo que usan el
-  Numerador, Renumerar Array y el Comentador.
+  (que puede ser `async`, por ejemplo para traducir), importa encima y borra la carpeta.
 - Elegir PLC o bloque **no** va aquí: son diálogos y se quedan en cada app.
 
 ### Resultados y fallos
@@ -140,13 +133,9 @@ Cubren lo que usan hoy las tres apps. Un bloque se identifica siempre por **PLC,
 
 ## 8. Plan
 
-1. **Repo y núcleo** (hecho, issue #4): `Contracts`, `Core` (traído de `Services/` de HerramientasSICAR), `Bridge`, `Client`, tests, `checks.sh` (compilación con avisos como errores + tests, sin TIA) y prueba contra un TIA real con `tools/TiaConnector.Smoke`.
-2. **GST-Diag** pasa al cliente y se borra `GstDiag.Exporter` (hecho, GST-Diag PR #98). Es la prueba más sencilla: solo `openProjects`, `connect` y `exportProgram`.
-3. **GST-LoS-Generator** pasa al cliente y se borra `GstLosGenerator.Tia`.
-4. **HerramientasSICAR** pasa al cliente y se borra su `Services/`. Después, si se quiere, se migra a .NET 10.
-5. Se retira el repo ImportExportTIA.
-
-Cada paso, en su repo, con issue, rama, `checks.sh` y PR.
+1. **Repo y núcleo** (hecho, issue #4): `Contracts`, `Core`, `Bridge`, `Client`, tests, `checks.sh` (compilación con avisos como errores + tests, sin TIA) y prueba contra un TIA real con `tools/TiaConnector.Smoke`.
+2. **Las apps** pasan a usar el cliente y quitan su propio acceso a Openness, cada una en su repo, con issue, rama,
+   `checks.sh` y PR (hecho).
 
 ## 9. Fuera de la versión 1
 

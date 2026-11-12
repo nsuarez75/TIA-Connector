@@ -93,8 +93,8 @@ public static class HmiRules
     };
 
     /// <summary>
-    /// Carpeta de la rama al exportar. Se mantienen los nombres en castellano que ya usa HerramientasSICAR para que sus
-    /// exportaciones sigan valiendo.
+    /// Carpeta de la rama al exportar. Los nombres son fijos: si cambian, las exportaciones ya hechas dejan de reconocerse
+    /// al importarlas.
     /// </summary>
     public static string FolderName(HmiBranch branch) => branch switch
     {

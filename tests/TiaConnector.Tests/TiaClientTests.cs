@@ -135,7 +135,7 @@ public sealed class TiaClientTests
         using var client = await Connect(bridge);
         var blocks = new[]
         {
-            new BlockRef { Plc = "PLC_1", Folders = { "Secuencias" }, Name = "Uno_FB" },
+            new BlockRef { Plc = "PLC_1", Folders = { "Motores" }, Name = "Uno_FB" },
             new BlockRef { Plc = "PLC_2", Folders = { "Otra" }, Name = "Dos_FB" },
         };
 
@@ -145,7 +145,7 @@ public sealed class TiaClientTests
         Assert.Equal(1, result.Succeeded);
         Assert.Equal("Dos_FB", result.Failures.Single().Item);
         Assert.Equal("PLC_1", imported.Single().Plc);
-        Assert.Equal(new[] { "Secuencias" }, imported.Single().Folders);
+        Assert.Equal(new[] { "Motores" }, imported.Single().Folders);
         Assert.Equal("<b>nuevo Uno_FB</b>", importedXml.Single().TrimStart('\uFEFF'));
     }
 
@@ -161,16 +161,16 @@ public sealed class TiaClientTests
                 Blocks = { new BlockInfo { Name = "Main" } },
                 Folders =
                 {
-                    new BlockFolder { Name = "10_Sequence", Folders = { new BlockFolder { Name = "OM1", Blocks = { new BlockInfo { Name = "Uno_FB" } } } } },
+                    new BlockFolder { Name = "Motores", Folders = { new BlockFolder { Name = "Linea1", Blocks = { new BlockInfo { Name = "Uno_FB" } } } } },
                 },
             },
         };
 
-        var inSequence = BlockSearch.InFolder(tree, "10_sequence");
+        var inMotors = BlockSearch.InFolder(tree, "motores");
         var all = BlockSearch.Find(tree, (_, _) => true);
 
-        Assert.Equal(new[] { "10_Sequence", "OM1" }, inSequence.Single().Folders);
-        Assert.Equal("PLC_1", inSequence.Single().Plc);
+        Assert.Equal(new[] { "Motores", "Linea1" }, inMotors.Single().Folders);
+        Assert.Equal("PLC_1", inMotors.Single().Plc);
         Assert.Equal(new[] { "Main", "Uno_FB" }, all.Select(b => b.Name));
         Assert.Empty(all[0].Folders);
     }

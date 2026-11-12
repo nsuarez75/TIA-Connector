@@ -1,6 +1,6 @@
 # TIA-Connector
 
-Conexión común con TIA Portal (Openness) para todas nuestras apps. Openness V19 solo funciona en .NET Framework 4.8,
+Conexión con TIA Portal (Openness) para apps .NET. Openness V19 solo funciona en .NET Framework 4.8,
 así que el acceso a TIA vive aquí, en un **puente** 4.8 que cada app lanza y con el que habla mediante una librería
 **cliente** que vale para .NET 10 y para .NET Framework 4.8.
 
@@ -29,8 +29,8 @@ La especificación completa (operaciones, protocolo, decisiones) está en [`docs
    var project = await tia.ConnectAsync(open[0].ProjectPath);   // la primera vez TIA pide permiso al usuario
    var plcs = project.Devices.Where(d => d.Kind == DeviceKind.Plc).Select(d => d.Name);
    var tree = await tia.ReadTreeAsync(plcs, []);
-   var sequences = BlockSearch.InFolder(tree.Plcs[0], "10_Sequence & Messageblocks");
-   var result = await tia.ModifyBlocksAsync(sequences, async (block, xml) => Change(xml), compile: true);
+   var motors = BlockSearch.InFolder(tree.Plcs[0], "Motores");
+   var result = await tia.ModifyBlocksAsync(motors, async (block, xml) => Change(xml), compile: true);
    ```
 
    Cada operación sobre varios elementos devuelve un `BatchResult` (correctos, fallos con su código y archivos
