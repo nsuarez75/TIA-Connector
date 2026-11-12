@@ -13,11 +13,11 @@ public sealed class FileRulesTests : IDisposable
     [InlineData("Estacion_FB", "Estacion_FB")]
     [InlineData("A/B:C*D", "A_B_C_D")]
     [InlineData("  ", "_")]
-    public void SafeName_changes_characters_that_Windows_does_not_accept(string name, string expected) =>
+    public void SafeName_InvalidCharacters_ReplacesWithUnderscore(string name, string expected) =>
         Assert.Equal(expected, FileRules.SafeName(name));
 
     [Fact]
-    public void IsPathTooLong_follows_the_Windows_limits_for_file_and_folder()
+    public void IsPathTooLong_OverWindowsLimits_ReturnsTrue()
     {
         Assert.False(FileRules.IsPathTooLong(@"C:\a\b.xml"));
         Assert.True(FileRules.IsPathTooLong(@"C:\" + new string('a', 260)));
@@ -25,7 +25,7 @@ public sealed class FileRulesTests : IDisposable
     }
 
     [Fact]
-    public void FreeXmlPath_numbers_the_file_when_the_name_is_taken()
+    public void FreeXmlPath_NameTaken_AddsNumber()
     {
         string first = FileRules.FreeXmlPath(_temp.Path, "Bloque");
         Assert.Equal(Path.Combine(_temp.Path, "Bloque.xml"), first);
@@ -34,7 +34,7 @@ public sealed class FileRulesTests : IDisposable
     }
 
     [Fact]
-    public void RelativeFolders_are_the_folders_between_the_base_and_the_file()
+    public void RelativeFolders_FileInsideBase_ReturnsFoldersBetween()
     {
         string file = Path.Combine(_temp.Path, "A", "B", "x.xml");
         Assert.Equal(new[] { "A", "B" }, FileRules.RelativeFolders(_temp.Path, file));
@@ -42,7 +42,7 @@ public sealed class FileRulesTests : IDisposable
     }
 
     [Fact]
-    public void ReadObjectName_reads_the_first_AttributeList_name()
+    public void ReadObjectName_ExportedXml_ReturnsFirstName()
     {
         string path = Path.Combine(_temp.Path, "fb.xml");
         File.WriteAllText(path, "<Document><SW.Blocks.FB ID=\"0\"><AttributeList><Name> Ejemplo_FB </Name></AttributeList></SW.Blocks.FB></Document>");
@@ -55,7 +55,7 @@ public sealed class FileRulesTests : IDisposable
     [InlineData("Hmi.Tag.TagTable", HmiBranch.Tags)]
     [InlineData("Hmi.TextGraphicList.TextList", HmiBranch.TextLists)]
     [InlineData("Hmi.Screen.ScreenOverview", HmiBranch.ScreenOverview)]
-    public void DetectBranch_reads_the_HMI_element_type(string element, HmiBranch expected)
+    public void DetectBranch_HmiElement_ReturnsBranch(string element, HmiBranch expected)
     {
         string path = Path.Combine(_temp.Path, "hmi.xml");
         File.WriteAllText(path, $"<Document><{element} ID=\"0\" /></Document>");
@@ -63,7 +63,7 @@ public sealed class FileRulesTests : IDisposable
     }
 
     [Fact]
-    public void DetectBranch_returns_null_for_PLC_blocks()
+    public void DetectBranch_PlcBlock_ReturnsNull()
     {
         string path = Path.Combine(_temp.Path, "fb.xml");
         File.WriteAllText(path, "<Document><SW.Blocks.FB ID=\"0\" /></Document>");
@@ -71,7 +71,7 @@ public sealed class FileRulesTests : IDisposable
     }
 
     [Fact]
-    public void FoldersInsideBranch_skips_up_to_the_branch_folder()
+    public void FoldersInsideBranch_PathWithBranchFolder_SkipsUpToIt()
     {
         Assert.Equal(new[] { "Sub" }, HmiRules.FoldersInsideBranch(HmiBranch.Screens, new[] { "HMI_1", "Pantallas", "Sub" }));
         Assert.Equal(new[] { "A", "B" }, HmiRules.FoldersInsideBranch(HmiBranch.Screens, new[] { "A", "B" }));
@@ -79,7 +79,7 @@ public sealed class FileRulesTests : IDisposable
     }
 
     [Fact]
-    public void Branch_order_imports_what_others_use_first()
+    public void HmiBranch_EnumOrder_DependenciesFirst()
     {
         Assert.True(HmiBranch.Connections < HmiBranch.Tags);
         Assert.True(HmiBranch.Tags < HmiBranch.Screens);

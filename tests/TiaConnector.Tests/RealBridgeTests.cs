@@ -12,7 +12,7 @@ namespace TiaConnector.Tests;
 public sealed class RealBridgeTests
 {
     [Fact]
-    public async Task Embedded_bridge_starts_and_answers_or_reports_no_Openness()
+    public async Task StartAsync_EmbeddedBridge_StartsOrReportsNoOpenness()
     {
         TiaClient client;
         try
@@ -34,7 +34,7 @@ public sealed class RealBridgeTests
     }
 
     [Fact]
-    public async Task Request_before_connecting_fails_with_NotConnected_and_the_bridge_keeps_working()
+    public async Task Request_BeforeConnect_FailsAndBridgeKeepsWorking()
     {
         TiaClient client;
         try
