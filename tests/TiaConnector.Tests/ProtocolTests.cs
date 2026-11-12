@@ -37,7 +37,7 @@ public sealed class ProtocolTests
     }
 
     [Fact]
-    public void Device_station_travels_with_the_project_and_is_empty_when_an_older_bridge_does_not_send_it()
+    public void FromElement_DeviceStation_KeptOrEmpty()
     {
         var info = new ProjectInfo { Devices = { new DeviceInfo { Name = "HMI_RT_1", Kind = DeviceKind.Hmi, Station = "IPC_Linea1" } } };
 
